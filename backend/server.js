@@ -7,7 +7,24 @@ const connectDB = require('./config/db');
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(async () => {
+    // Seed default Admin if it doesn't exist
+    try {
+        const User = require('./models/User');
+        const adminExists = await User.findOne({ email: 'admin@parixa.com' });
+        if (!adminExists) {
+            await User.create({
+                name: 'System Admin',
+                email: 'admin@parixa.com',
+                password: 'admin',
+                role: 'admin'
+            });
+            console.log('Default Admin Account seeded to database');
+        }
+    } catch (err) {
+        console.error('Error seeding admin account:', err);
+    }
+});
 
 const app = express();
 

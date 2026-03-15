@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 const generateToken = (id, role) => {
@@ -38,10 +39,11 @@ router.post('/login', async (req, res) => {
 
 // Route: PUT /api/auth/change-password
 // Desc : User can change their own password to something secure
-router.put('/change-password', async (req, res) => {
+router.put('/change-password', protect, async (req, res) => {
     try {
-        // Assume req.user comes from our future authMiddleware checking the JWT
-        const { userId, oldPassword, newPassword } = req.body; // Currently relying on body since middleware isn't written yet
+        // req.user is now guaranteed by the `protect` middleware
+        const userId = req.user._id;
+        const { oldPassword, newPassword } = req.body;
 
         const user = await User.findById(userId);
         
@@ -59,6 +61,22 @@ router.put('/change-password', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error changing password' });
+    }
+});
+
+// Route: GET /api/auth/me
+// Desc : Get the currently logged in user profile (to rehydrate frontend token)
+router.get('/me', protect, async (req, res) => {
+    try {
+        // req.user is populated by `protect` middleware
+        res.json({
+            id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            role: req.user.role,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error getting current user' });
     }
 });
 
