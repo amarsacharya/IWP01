@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -11,13 +11,30 @@ const UserManagement = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Mock data
-    const [users, setUsers] = useState([
-        { id: 1, name: 'Admin User', email: 'admin@system.com', role: 'admin', status: 'active' },
-        { id: 2, name: 'Teacher One', email: 'teacher1@school.edu', role: 'teacher', status: 'active' },
-        { id: 3, name: 'Student Alice', email: 'alice@student.edu', role: 'student', status: 'active' },
-        { id: 4, name: 'Student Bob', email: 'bob@student.edu', role: 'student', status: 'inactive' },
-    ]);
+    const [users, setUsers] = useState([]);
+    const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
+    // Fetch real data from MongoDB
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const data = await userService.getAllUsers();
+                // Map _id to id for the frontend
+                const formattedUsers = data.map(user => ({
+                    ...user,
+                    id: user._id, 
+                    status: 'active' // Since status isn't built into model yet
+                }));
+                setUsers(formattedUsers);
+            } catch (error) {
+                console.error("Failed to load users:", error);
+            } finally {
+                setIsLoadingUsers(false);
+            }
+        };
+
+        fetchUsers();
+    }, []);
 
     const filteredUsers = users.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -127,7 +144,13 @@ const UserManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredUsers.map((user) => (
+                            {isLoadingUsers ? (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                                        Loading users...
+                                    </td>
+                                </tr>
+                            ) : filteredUsers.map((user) => (
                                 <tr key={user.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">

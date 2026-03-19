@@ -57,4 +57,17 @@ router.post('/register', protect, adminOnly, async (req, res) => {
     }
 });
 
+// Route: GET /api/admin/users
+// Desc : Admin gets list of all users
+// Note : Protected so only authenticated Admins can access it
+router.get('/users', protect, adminOnly, async (req, res) => {
+    try {
+        const users = await User.find({}).select('-password');
+        res.json(users);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error fetching users' });
+    }
+});
+
 module.exports = router;

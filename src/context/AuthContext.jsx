@@ -16,18 +16,9 @@ export const AuthProvider = ({ children }) => {
                     const userData = await authService.getCurrentUser();
                     setUser(userData);
                 } catch (error) {
-                    console.warn('Failed to authenticate token with backend. Using mock user for demo.');
-                    // If backend fails but we have the mock token, set a mock user so ProtectedRoutes work
-                    if (token === 'mock-jwt-token-123') {
-                        // Determine role based on window.location or default
-                        let role = 'student';
-                        if (window.location.pathname.includes('admin')) role = 'admin';
-                        if (window.location.pathname.includes('teacher')) role = 'teacher';
-
-                        setUser({ id: 1, name: 'Demo User', role: role });
-                    } else {
-                        localStorage.removeItem('token');
-                    }
+                    console.error('Failed to authenticate token with backend. Logging out.');
+                    localStorage.removeItem('token');
+                    setUser(null);
                 }
             }
             setLoading(false);
@@ -40,8 +31,10 @@ export const AuthProvider = ({ children }) => {
     const login = async (credentials) => {
         const data = await authService.login(credentials);
         localStorage.setItem('token', data.token);
-        setUser(data.user);
-        return data.user;
+        // Exclude token from the user object state
+        const { token, ...userData } = data;
+        setUser(userData);
+        return userData;
     };
 
     const logout = () => {

@@ -6,7 +6,7 @@ import Button from '../../components/common/Button';
 import { GraduationCap } from 'lucide-react';
 
 const Login = () => {
-    const [credentials, setCredentials] = useState({ username: '', password: '' });
+    const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -22,55 +22,28 @@ const Login = () => {
         e.preventDefault();
         setError('');
 
-        if (!credentials.username || !credentials.password) {
-            setError('Please enter both username and password.');
+        if (!credentials.email || !credentials.password) {
+            setError('Please enter both email and password.');
             return;
         }
 
         setLoading(true);
         try {
-            // Mocking for frontend demo:
-            let mockUser = { id: 1, name: 'Demo User', role: 'student' };
-            if (credentials.username.includes('admin')) mockUser.role = 'admin';
-            if (credentials.username.includes('teacher')) mockUser.role = 'teacher';
+            // Send email and password to the backend
+            const userResult = await login(credentials);
 
-            // We attempt the real login. If it fails (e.g., API is off), we manually set the context state.
-            let userResult;
-            try {
-                userResult = await login(credentials);
-            } catch (err) {
-                console.warn("Backend API call failed. Using mock login instead.");
-                // Manually trigger the context state update using local storage since the real authService failed
-                localStorage.setItem('token', 'mock-jwt-token-123');
-
-                // Note: since we use the Context, we can't easily force the `setUser` from here directly 
-                // without modifying the AuthContext to expose `setUser`, OR we can just reload the page 
-                // so the useEffect picks up the token, OR we just navigate directly and let the 
-                // protected route handle it.
-                // Best demo approach: modify AuthContext login function to handle mock, OR just do it here:
-
-                userResult = mockUser;
-            }
-
-            // In our demo, we need to make sure the AuthContext actually has this user if we bypassed it
-            // To fix the UI non-redirect, we'll force navigation, but the ProtectedRoute needs the user.
-            // Let's reload the page to the target URL so context re-initializes with the mock token OR 
-            // a better way: we will pass a flag. For now, since it's a demo, we will force window.location
-
+            // Navigate to the correct dashboard based on role
             const targetUrl = userResult.role === 'admin'
                 ? '/admin/dashboard'
                 : userResult.role === 'teacher'
                     ? '/teacher/dashboard'
                     : '/student/dashboard';
 
-            // Force full reload to target URL so AuthContext's useEffect sees the mock token
-            // Normally `navigate(targetUrl)` is used, but if Context `user` is null, ProtectedRoute kicks us back.
-            // We will update AuthContext next to expose a force update. For now:
-            window.location.href = targetUrl;
-
+            // Use React Router to seamlessly transition without full page load
+            navigate(targetUrl);
         } catch (err) {
             console.error(err);
-            setError('Invalid credentials. Please try again.');
+            setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -106,15 +79,15 @@ const Login = () => {
                         )}
 
                         <Input
-                            label="Username / Email"
-                            id="username"
-                            name="username"
-                            type="text"
-                            autoComplete="username"
+                            label="Email Address"
+                            id="email"
+                            name="email"
+                            type="email"
+                            autoComplete="email"
                             required
-                            value={credentials.username}
+                            value={credentials.email}
                             onChange={handleChange}
-                            placeholder="e.g., student1, teacher_admin"
+                            placeholder="Enter your email"
                         />
 
                         <Input
@@ -153,10 +126,6 @@ const Login = () => {
                             <Button type="submit" fullWidth isLoading={loading}>
                                 Sign in
                             </Button>
-                        </div>
-
-                        <div className="mt-4 text-xs text-gray-500 text-center">
-                            <p>Demo accounts: <b>admin</b>, <b>teacher</b>, <b>student</b></p>
                         </div>
                     </form>
                 </div>

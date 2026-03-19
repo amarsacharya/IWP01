@@ -3,7 +3,7 @@ import api from './api';
 export const userService = {
     // Admin specific
     getAllUsers: async () => {
-        const response = await api.get('/users');
+        const response = await api.get('/admin/users');
         return response.data;
     },
 
